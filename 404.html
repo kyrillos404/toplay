@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base href="/">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Toplay</title>
+<meta name="description" content="Toplay is a tiny arcade of language games. In Find It!, spot 20 hidden objects in a room, hear each word and learn it in English or German. Beat the clock.">
+<meta name="theme-color" content="#12121C">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Toplay · Find It!">
+<meta property="og:description" content="Toplay is a tiny arcade of language games. In Find It!, spot 20 hidden objects in a room, hear each word and learn it in English or German. Beat the clock.">
+<meta property="og:image" content="https://to-play.vercel.app/assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://to-play.vercel.app/">
+<link rel="canonical" href="https://to-play.vercel.app/">
+<meta name="twitter:image" content="https://to-play.vercel.app/assets/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap">
+<link rel="preload" href="data/levels.json" as="fetch" crossorigin>
+<link rel="stylesheet" href="app.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<div class="loader" id="loader" role="status" aria-live="polite">
+  <div>
+    <svg class="loader-mark" viewBox="0 0 512 512" aria-hidden="true"><use href="#mark" width="512" height="512"/></svg>
+    <div class="loader-pct" id="loaderPct">00%</div>
+    <div class="loader-bar"><i id="loaderBar"></i></div>
+    <div class="loader-msg" id="loaderMsg">Dusting off the room…</div>
+  </div>
+</div>
+
+<div class="gate" id="gate" hidden>
+  <div>
+    <svg class="gate-logo" viewBox="0 0 1711 733" role="img" aria-label="toplay"><use href="#logo" width="1711" height="733"/></svg>
+    <h1 class="sr">Toplay</h1><p class="gate-line">Look closer.</p>
+    <div class="gate-lang" data-lang-slot="gate"></div>
+    <p>Toplay is better with sound.</p>
+    <div class="gate-actions">
+      <button class="btn btn-lg" id="enterSound" type="button" data-cursor="PLAY"><svg class="icon" aria-hidden="true"><use href="#i-sound-on"/></svg>Enter with sound</button>
+      <button class="linkbtn" id="enterQuiet" type="button">Enter without sound</button>
+    </div>
+  </div>
+</div>
+
+<div class="intro" id="intro" hidden>
+  <canvas id="introCanvas" aria-hidden="true"></canvas>
+  <div class="intro-count" id="introCount" aria-hidden="true"></div>
+  <div class="intro-title" id="introTitle" hidden>
+    <div>
+      <svg class="intro-logo" viewBox="0 0 1711 733" role="img" aria-label="toplay"><use href="#logo" width="1711" height="733"/></svg>
+      <b>Find It!</b>
+    </div>
+  </div>
+  <button class="btn btn-ghost btn-sm intro-skip" id="introSkip" type="button">Skip intro</button>
+</div>
+
+<div class="wipe" id="wipe" aria-hidden="true"></div>
+
+<header class="site-header" id="siteHeader">
+  <div class="hdr-left" id="hdrLeft"></div>
+  <a class="blob-wrap" id="homeLink" href="#home" aria-label="Toplay home" data-cursor="HOME">
+    <svg class="hdr-logo" viewBox="0 0 1711 733" aria-hidden="true"><use href="#logo" width="1711" height="733"/></svg>
+  </a>
+  <div class="hdr-right">
+    <div data-lang-slot="header"></div>
+    <button class="ibtn sound-toggle" type="button" aria-label="Mute sound" title="Sound (M)"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
+    <button class="menu-tab" id="menuOpen" type="button" aria-label="Open menu" aria-controls="menu" aria-expanded="false"><span class="t">Menu</span><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button>
+  </div>
+</header>
+
+<div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Menu" hidden>
+  <div class="menu-top">
+    <span class="label">Toplay · Menu</span>
+    <button class="ibtn" id="menuClose" type="button" aria-label="Close menu"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <nav aria-label="Main">
+    <button type="button" data-go="home">Home</button>
+    <button type="button" data-go="play">Play Find It!<small id="menuLv">Lv 1</small></button>
+    <button type="button" data-go="levels">Levels</button>
+    <button type="button" data-go="story">Story mode</button>
+  </nav>
+  <div class="menu-foot">
+    <div data-lang-slot="menu"></div>
+    <div class="toggles">
+      <button class="btn btn-ghost btn-sm" type="button" data-toggle="music" aria-pressed="true">Music on</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-toggle="sfx" aria-pressed="true">Effects on</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-toggle="voice" aria-pressed="true">Words on</button>
+    </div>
+    <span>Press <b>M</b> to mute · Made by <a href="https://www.linkedin.com/in/kyrillosnabil/" target="_blank" rel="noopener">kyrillos404</a></span>
+  </div>
+</div>
+
+<main id="main">
+  <!-- HOME -->
+  <section class="view" id="view-home" data-view="home" hidden>
+    <div class="hero" id="hero">
+      <canvas id="heroDepth" aria-hidden="true"></canvas>
+      <canvas id="heroCanvas" aria-hidden="true"></canvas>
+      <div class="hero-veil" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <div class="wrap">
+          <span class="badge warm" id="heroWarm" aria-live="polite">Warm-up · Find 3 hidden play buttons</span>
+          <h1>Look closer<span class="dot">.</span></h1>
+          <p>Find 20 hidden things. Learn 20 English words. Beat the clock.</p>
+          <div class="hero-actions">
+            <button class="btn btn-lg" id="heroPlay" type="button" data-go="play" data-cursor="PLAY"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Play Find It!</button>
+            <button class="btn btn-ghost" type="button" data-go="how">How to play</button>
+          </div>
+        </div>
+      </div>
+      <div class="hero-hint" aria-hidden="true">
+        <span class="label">Warm up your eyes</span>
+        <span class="label">3 play buttons are hiding up here</span>
+      </div>
+    </div>
+
+    <div class="marquee" aria-hidden="true"><div class="marquee-track">
+      <span>LET'S PLAY<b></b>FIND IT!<b></b>20 WORDS<b></b>10 MINUTES<b></b>LOOK CLOSER<b></b>LET'S PLAY<b></b>FIND IT!<b></b>20 WORDS<b></b>10 MINUTES<b></b>LOOK CLOSER<b></b></span>
+      <span>LET'S PLAY<b></b>FIND IT!<b></b>20 WORDS<b></b>10 MINUTES<b></b>LOOK CLOSER<b></b>LET'S PLAY<b></b>FIND IT!<b></b>20 WORDS<b></b>10 MINUTES<b></b>LOOK CLOSER<b></b></span>
+    </div></div>
+
+    <section class="section" id="games" aria-labelledby="games-h">
+      <div class="wrap">
+        <div class="sec-head">
+          <div><span class="label">The arcade</span><h2 id="games-h">Pick a game</h2></div>
+          <p id="gamesOpen">One room is open today. More games and rooms are being built right now.</p>
+        </div>
+        <div class="games">
+          <article class="gcard main" data-cursor="PLAY">
+            <div class="gcard-art"><img src="assets/levels/1-cover.webp" alt="" loading="lazy" width="640" height="357"><span class="mystery-q" aria-hidden="true">?</span><span class="badge badge-blaze">Hidden objects</span></div>
+            <div class="gcard-body">
+              <h3>Find It!</h3>
+              <p>A playroom after a very busy afternoon. Twenty things are hiding in the mess, and each one is an English word to learn.</p>
+              <div class="gcard-row">
+                <div class="gcard-stats" id="homeStats"><span class="badge">20 words</span><span class="badge">10:00</span></div>
+                <button class="btn" type="button" data-go="play"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Play now</button>
+              </div>
+            </div>
+          </article>
+          <div class="games-side">
+            <article class="gcard soon" data-cursor="SOON">
+              <div class="gcard-body">
+                <div class="soon-art"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg></div>
+                <h3>Word Pop</h3>
+                <span class="stamp">Coming soon</span>
+              </div>
+            </article>
+            <article class="gcard soon" data-cursor="SOON">
+              <div class="gcard-body">
+                <div class="soon-art"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg></div>
+                <h3>Memory Match</h3>
+                <span class="stamp">Coming soon</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how" aria-labelledby="how-h">
+      <div class="wrap">
+        <div class="sec-head">
+          <div><span class="label">How to play</span><h2 id="how-h">Three moves to win, one to learn</h2></div>
+          <p>Every room works the same way. Use your eyes, not your luck.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-art"><div class="art-dots" id="artDots"></div><div class="art-lens"></div></div>
+            <span class="step-num">01</span>
+            <h3>Look closer</h3>
+            <p>Scan the room. Zoom in with the buttons, a pinch or the mouse wheel. Drag to move around.</p>
+          </div>
+          <div class="step">
+            <div class="step-art"><div class="art-tap"></div><span class="art-tap-word">found!</span></div>
+            <span class="step-num">02</span>
+            <h3>Tap to find</h3>
+            <p>Tap an object from the word list. It lights up and its word is crossed off. Every 5 wrong taps cost 10 seconds.</p>
+          </div>
+          <div class="step">
+            <div class="step-art"><div class="art-clock" id="artClock">10:00</div><div class="art-bar"><i></i></div></div>
+            <span class="step-num">03</span>
+            <h3>Beat the clock</h3>
+            <p>Find all 20 before time runs out. Stuck? Help shows you one object, then needs 15 seconds to recharge.</p>
+          </div>
+          <div class="step step-say">
+            <div class="step-art"><div class="art-say"><span class="art-say-word">der Apfel</span><svg class="icon" aria-hidden="true"><use href="#i-sound-on"/></svg><i></i><i></i></div></div>
+            <span class="step-num">04</span>
+            <h3>Listen and learn</h3>
+            <p>Tap any word in the list to hear it. Tap an object you already found to hear its word again.</p>
+          </div>
+        </div>
+        <div class="rules">
+          <div class="rule"><b>20</b><span>words per room</span></div>
+          <div class="rule"><b>10:00</b><span>minutes on the clock</span></div>
+          <div class="rule"><b>15s</b><span>between each help</span></div>
+          <div class="rule"><b>−10s</b><span>for every 5 misses</span></div>
+          <div class="rule"><b>★★★</b><span>for 3,200 points or more</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="story" aria-labelledby="story-h">
+      <div class="wrap story">
+        <div class="story-text">
+          <span class="label">Story mode</span>
+          <h2 class="story-h" id="story-h">Where things go to hide</h2>
+          <p><strong>Toplay is a small arcade of browser games</strong> that you play with your eyes and your head. No downloads, no accounts, just tap and play.</p>
+          <p>The first room, The Toy Room, is a playroom after a very busy afternoon. Every object you find is an everyday English word, so a few minutes of play leave you with twenty words you will not forget.</p>
+          <div class="credits">
+            <span class="label">Credits</span>
+            <span>Designed by <a href="https://www.linkedin.com/in/kyrillosnabil/" target="_blank" rel="noopener">kyrillos404</a>. Built with Claude, an AI assistant. Music and sound effects composed in code for Toplay.</span>
+          </div>
+        </div>
+        <div class="story-card" aria-hidden="true">
+          <span class="label">Room 01</span>
+          <span class="big">The Toy Room</span>
+          <span class="label">20 objects · 10 minutes · a lot of mess</span>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <!-- LEVELS -->
+  <section class="view" id="view-levels" data-view="levels" hidden>
+    <div class="wrap">
+      <div class="levels-head">
+        <span class="label">Find It! · Levels</span>
+        <h1>Choose a room<span>.</span></h1>
+        <div class="progress-row">
+          <div class="progress" role="img" id="levelsProgressBar" aria-label="1 of 3 rooms unlocked"><i style="width:33%"></i></div>
+          <span class="badge" id="levelsUnlocked">1 / 3 rooms unlocked</span>
+          <span class="badge badge-zest" id="levelsStars">★ 0 / 9</span>
+        </div>
+      </div>
+      <div class="level-grid" id="levelGrid"></div>
+      <div class="banner">
+        <p id="levelsMore">More rooms are on their way. Come back soon!</p>
+        <button class="btn btn-ghost btn-sm" type="button" data-go="home">Back home</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 404 -->
+  <section class="view" id="view-lost" data-view="lost" hidden>
+    <div class="wrap lost">
+      <span class="label">Error 404</span>
+      <h1>This page is hiding too.</h1>
+      <p>Move your lens around the dark room and tap the lost page.</p>
+      <div class="lost-room" id="lostRoom" data-cursor="LENS">
+        <div class="floor"></div>
+        <div id="lostJunk"></div>
+        <button class="hidden-404" id="lost404" type="button" aria-label="The lost page">404</button>
+        <div class="dark"></div>
+        <div class="found-msg" id="lostFound" hidden><div><b>Found it!</b><button class="btn" type="button" data-go="home"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg>Take me home</button></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer" id="siteFooter">
+  <div class="wrap foot">
+    <a class="foot-logo" href="#home" data-go-link="home" aria-label="Toplay home"><svg class="foot-logo-svg" viewBox="0 0 1711 733" aria-hidden="true"><use href="#logo" width="1711" height="733"/></svg></a>
+    <nav aria-label="Footer">
+      <button type="button" data-go="play">Play</button>
+      <button type="button" data-go="levels">Levels</button>
+      <button type="button" data-go="how">How to play</button>
+      <button type="button" data-go="story">About</button>
+    </nav>
+    <div class="foot-by">
+      <span>Designed by <a href="https://www.linkedin.com/in/kyrillosnabil/" target="_blank" rel="noopener">kyrillos404</a> · Built with Claude</span>
+      <span>© 2026 Toplay</span>
+    </div>
+  </div>
+</footer>
+
+<!-- GAME -->
+<div class="game" id="game" hidden>
+  <div class="game-hud">
+    <div class="hud-left">
+      <button class="ibtn" id="gPause" type="button" aria-label="Pause (Esc)" title="Pause (Esc)"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></button>
+      <div class="hud-title"><span class="label" id="gRoomNo">Room 1</span><b id="gRoomName">The Toy Room</b></div>
+    </div>
+    <div class="hud-center">
+      <div class="timer" id="gTimer" role="timer" aria-label="10:00 left">
+        <svg class="icon" aria-hidden="true"><use href="#i-timer"/></svg>
+        <span class="timer-time" id="gTime">10:00</span>
+        <span class="timer-side"><span class="timer-bar"><i id="gTimeBar" style="width:100%"></i></span><span class="miss-dots" id="gMissDots" aria-label="0 of 5 misses before a penalty"><i></i><i></i><i></i><i></i><i></i></span></span>
+      </div>
+    </div>
+    <div class="hud-right">
+      <span class="badge found-chip" id="gFoundChip">0 / 20</span>
+      <button class="ibtn sound-toggle hud-sound" type="button" aria-label="Mute sound" title="Sound (M)"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
+      <button class="ibtn" id="gFull" type="button" aria-label="Full screen (F)" title="Full screen (F)"><svg class="icon" aria-hidden="true"><use href="#i-expand"/></svg></button>
+    </div>
+  </div>
+  <div class="game-body">
+    <div class="stage" id="gStage" data-cursor="LENS" aria-label="The Toy Room. Tap hidden objects.">
+      <div class="scene" id="gScene"><img id="gImg" alt="A cluttered children's toy room" draggable="false"><div class="marks" id="gMarks"></div></div>
+      <div class="ctl-hint" id="gCtlHint">Drag to move · Pinch or scroll to zoom · Tap to find</div>
+      <div class="stage-tools">
+        <button class="ibtn ibtn-sm" id="gZoomIn" type="button" aria-label="Zoom in (+)"><svg class="icon" aria-hidden="true"><use href="#i-zoom-in"/></svg></button>
+        <button class="ibtn ibtn-sm" id="gZoomOut" type="button" aria-label="Zoom out (−)"><svg class="icon" aria-hidden="true"><use href="#i-zoom-out"/></svg></button>
+      </div>
+      <div class="help-wrap">
+        <button class="help" id="gHelp" type="button" aria-label="Help: show one hidden object (H)" data-cursor="HELP"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg></button>
+        <span class="help-cap" id="gHelpCap">Help</span>
+      </div>
+      <div class="toasts" id="gToasts" aria-live="polite"></div>
+    </div>
+    <aside class="words" id="gWords" aria-label="Words to find">
+      <button class="grab" id="gGrab" type="button" aria-label="Show all words" aria-expanded="false"></button>
+      <div class="words-head"><span class="label">Find these</span><b id="gLeft" aria-live="polite">20 left</b><span class="words-say"><svg class="icon" aria-hidden="true"><use href="#i-sound-on"/></svg>Tap a word to hear it</span></div>
+      <ul id="gWordList"></ul>
+    </aside>
+  </div>
+  <div id="gOverlay"></div>
+  <canvas class="confetti" id="gConfetti" hidden></canvas>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="logo" viewBox="150 609 1711 733"><path fill="#6E50FF" d="M1781.57,817.55c-1.42-1.29.56-2.7,1.42-1.18-.1.41.27.77.65.52,17.19,11.81,30.05,28.64,39.37,48.16,8.16,18.95,13.79,38.58,13.77,59.76l-.15,110.4c-.06,41.64-6.77,81.42-19.99,120.61-21.28,63.14-60.44,110.27-121.31,138.16-36.23,16.6-74.5,23.56-114.64,23.86-59.74.44-114.77-20.48-160.78-57.84l-32.76-26.6c-27.24-22.12-58.03-36-93.42-39.46l-78.28-1.96c-28.05-.7-54.47-1.55-82.08-5.87-21.95-3.43-42.9,3.68-62.25,13.82l-56.66,37.89c-30.66,20.5-60.69,39.96-96.06,51.04-60.15,18.84-122.95,14.84-179.6-12.88-43.4-21.23-88.25-35.71-136.68-39.17-32.17-2.3-61.43,1.6-92.04,10.4-31.63,9.09-64.67,10.98-96.78,5.21-37.69-6.78-69.27-27.04-90.1-57.67-.27-.4-.73-.73-1.01-.85-1.4-1.27.53-2.73,1.45-1.23,0,.3.25.49.48.31,21.22,9.94,43.58,16.75,67.95,18.5,31.17,2.67,61.01-1.62,90.98-9.68,57.15-15.37,128.9-9.18,183.24,14.19l57.09,24.56c56.26,22.13,116.58,21.28,172.8-.49,19.4-7.51,37.1-15.94,54.02-28.01l54.17-38.64c33.23-23.71,63.13-43.92,105.29-35.53,21.88,4.35,43.39,5.63,65.71,5.51l51.28-.26c52.41-.27,99.75,10.52,135.87,49.36,46.17,49.64,109.31,77.14,177.08,79.29,96.49,3.06,182.71-45.16,222.35-134.09,18.64-41.83,26.92-86.22,29.78-132.13l2.17-114.38c.48-25.5-2.3-49.82-11.33-72.78-.25-.35-.73-.7-1.02-.83Z"/><path fill="#12121C" stroke="#12121C" stroke-width="22" stroke-linejoin="round" transform="translate(8 10)" d="M768.39,1232.71c-25.25-4.79-46.6-13.96-68.92-24.45-32.11-15.09-64.28-26.49-99.47-31.77-43.63-6.55-86-4.57-128.47,6.87-33.81,9.11-67.75,11.15-101.69,4.04-55.43-11.6-97.61-50.97-112.97-105.25-7.47-26.41-9.65-52.76-7.89-80.59.53-8.38-2.67-16.19-11.27-18.62-38.05-10.72-63.38-43.94-63.96-83.99-.55-37.98,18.43-71.5,48.47-94.52,5.01-3.84,13.95-7.61,16.2-13.83,8.35-23.06,19.45-43.43,37.96-60.1,36.98-33.31,84.79-51.09,134.88-48.82,41.01,1.86,76.94,19.35,104.26,49.07,17.05,18.55,39.61,22.62,62.78,13.64,62.11-24.05,132.11-23.24,191.81,7.49,13.75,7.08,30,7.49,44.07.86,59.51-28.06,102.63-9.65,137.5-12.94,15.17-1.43,33.36-5.28,42.59-18.32,15.73-22.24,31.15-42.75,53.97-58.43,42.58-29.26,95.87-37.4,145.67-22.27,32.32,9.82,58.84,30.12,78.69,57.1,13.84,18.82,32.34,30.59,55.23,36.45,19.23,4.92,38.74,6.58,59.04,5.92l83.2-2.69c29.8-.96,56.73,6.28,82.96,19.53,15.87,8.02,34.42,7.06,51.07,2.41,64.65-18.03,133.03-3.16,158.66,61.8,7,17.74,11.75,35.84,11.27,55.49l-3.52,141.89c-3.05,37.64-10.56,72.85-25.21,107.29-23.95,56.3-70.17,98.52-129.36,115.7-79.56,23.09-174.5,4.52-231.98-56.38-57.69-61.11-114.77-65.02-197.29-62.52-29.02.88-56.15-1.32-84.49-6.45-41.67-7.55-85.01,22.82-118.49,47.49-21.43,15.79-41.7,30.88-65.22,43.6-46.06,24.89-97.46,35.27-150.06,25.29Z"/><path fill="#12121C" stroke="#12121C" stroke-width="22" stroke-linejoin="round" transform="translate(16 20)" d="M768.39,1232.71c-25.25-4.79-46.6-13.96-68.92-24.45-32.11-15.09-64.28-26.49-99.47-31.77-43.63-6.55-86-4.57-128.47,6.87-33.81,9.11-67.75,11.15-101.69,4.04-55.43-11.6-97.61-50.97-112.97-105.25-7.47-26.41-9.65-52.76-7.89-80.59.53-8.38-2.67-16.19-11.27-18.62-38.05-10.72-63.38-43.94-63.96-83.99-.55-37.98,18.43-71.5,48.47-94.52,5.01-3.84,13.95-7.61,16.2-13.83,8.35-23.06,19.45-43.43,37.96-60.1,36.98-33.31,84.79-51.09,134.88-48.82,41.01,1.86,76.94,19.35,104.26,49.07,17.05,18.55,39.61,22.62,62.78,13.64,62.11-24.05,132.11-23.24,191.81,7.49,13.75,7.08,30,7.49,44.07.86,59.51-28.06,102.63-9.65,137.5-12.94,15.17-1.43,33.36-5.28,42.59-18.32,15.73-22.24,31.15-42.75,53.97-58.43,42.58-29.26,95.87-37.4,145.67-22.27,32.32,9.82,58.84,30.12,78.69,57.1,13.84,18.82,32.34,30.59,55.23,36.45,19.23,4.92,38.74,6.58,59.04,5.92l83.2-2.69c29.8-.96,56.73,6.28,82.96,19.53,15.87,8.02,34.42,7.06,51.07,2.41,64.65-18.03,133.03-3.16,158.66,61.8,7,17.74,11.75,35.84,11.27,55.49l-3.52,141.89c-3.05,37.64-10.56,72.85-25.21,107.29-23.95,56.3-70.17,98.52-129.36,115.7-79.56,23.09-174.5,4.52-231.98-56.38-57.69-61.11-114.77-65.02-197.29-62.52-29.02.88-56.15-1.32-84.49-6.45-41.67-7.55-85.01,22.82-118.49,47.49-21.43,15.79-41.7,30.88-65.22,43.6-46.06,24.89-97.46,35.27-150.06,25.29Z"/><path fill="#12121C" stroke="#12121C" stroke-width="22" stroke-linejoin="round" d="M768.39,1232.71c-25.25-4.79-46.6-13.96-68.92-24.45-32.11-15.09-64.28-26.49-99.47-31.77-43.63-6.55-86-4.57-128.47,6.87-33.81,9.11-67.75,11.15-101.69,4.04-55.43-11.6-97.61-50.97-112.97-105.25-7.47-26.41-9.65-52.76-7.89-80.59.53-8.38-2.67-16.19-11.27-18.62-38.05-10.72-63.38-43.94-63.96-83.99-.55-37.98,18.43-71.5,48.47-94.52,5.01-3.84,13.95-7.61,16.2-13.83,8.35-23.06,19.45-43.43,37.96-60.1,36.98-33.31,84.79-51.09,134.88-48.82,41.01,1.86,76.94,19.35,104.26,49.07,17.05,18.55,39.61,22.62,62.78,13.64,62.11-24.05,132.11-23.24,191.81,7.49,13.75,7.08,30,7.49,44.07.86,59.51-28.06,102.63-9.65,137.5-12.94,15.17-1.43,33.36-5.28,42.59-18.32,15.73-22.24,31.15-42.75,53.97-58.43,42.58-29.26,95.87-37.4,145.67-22.27,32.32,9.82,58.84,30.12,78.69,57.1,13.84,18.82,32.34,30.59,55.23,36.45,19.23,4.92,38.74,6.58,59.04,5.92l83.2-2.69c29.8-.96,56.73,6.28,82.96,19.53,15.87,8.02,34.42,7.06,51.07,2.41,64.65-18.03,133.03-3.16,158.66,61.8,7,17.74,11.75,35.84,11.27,55.49l-3.52,141.89c-3.05,37.64-10.56,72.85-25.21,107.29-23.95,56.3-70.17,98.52-129.36,115.7-79.56,23.09-174.5,4.52-231.98-56.38-57.69-61.11-114.77-65.02-197.29-62.52-29.02.88-56.15-1.32-84.49-6.45-41.67-7.55-85.01,22.82-118.49,47.49-21.43,15.79-41.7,30.88-65.22,43.6-46.06,24.89-97.46,35.27-150.06,25.29Z"/><path fill="#FF6B1A" d="M768.39,1232.71c-25.25-4.79-46.6-13.96-68.92-24.45-32.11-15.09-64.28-26.49-99.47-31.77-43.63-6.55-86-4.57-128.47,6.87-33.81,9.11-67.75,11.15-101.69,4.04-55.43-11.6-97.61-50.97-112.97-105.25-7.47-26.41-9.65-52.76-7.89-80.59.53-8.38-2.67-16.19-11.27-18.62-38.05-10.72-63.38-43.94-63.96-83.99-.55-37.98,18.43-71.5,48.47-94.52,5.01-3.84,13.95-7.61,16.2-13.83,8.35-23.06,19.45-43.43,37.96-60.1,36.98-33.31,84.79-51.09,134.88-48.82,41.01,1.86,76.94,19.35,104.26,49.07,17.05,18.55,39.61,22.62,62.78,13.64,62.11-24.05,132.11-23.24,191.81,7.49,13.75,7.08,30,7.49,44.07.86,59.51-28.06,102.63-9.65,137.5-12.94,15.17-1.43,33.36-5.28,42.59-18.32,15.73-22.24,31.15-42.75,53.97-58.43,42.58-29.26,95.87-37.4,145.67-22.27,32.32,9.82,58.84,30.12,78.69,57.1,13.84,18.82,32.34,30.59,55.23,36.45,19.23,4.92,38.74,6.58,59.04,5.92l83.2-2.69c29.8-.96,56.73,6.28,82.96,19.53,15.87,8.02,34.42,7.06,51.07,2.41,64.65-18.03,133.03-3.16,158.66,61.8,7,17.74,11.75,35.84,11.27,55.49l-3.52,141.89c-3.05,37.64-10.56,72.85-25.21,107.29-23.95,56.3-70.17,98.52-129.36,115.7-79.56,23.09-174.5,4.52-231.98-56.38-57.69-61.11-114.77-65.02-197.29-62.52-29.02.88-56.15-1.32-84.49-6.45-41.67-7.55-85.01,22.82-118.49,47.49-21.43,15.79-41.7,30.88-65.22,43.6-46.06,24.89-97.46,35.27-150.06,25.29ZM1170.98,1045.81c11.13-7.08,17.04-19.97,17.03-33.17-.06-80.57,2.54-159.73,11.03-239.78,2.7-25.46-2.25-54.38-23.06-68.13-21.3-14.07-49.76-13.82-70.72.91-15.42,10.84-23.31,29.2-21.76,47.87l5.31,64.14c5.41,65.3,6.32,129.48,6.53,195.02.06,19.83,12.6,35.24,31.7,39.02,14.54,2.88,30.43,2.71,43.95-5.88ZM482.96,1028.56c-7.05-16.32-23.45-22.28-39.54-19.17-6.41,1.24-12.85.81-17.66-3.59-3.25-2.97-6.81-9.08-6.89-15.41l-1.01-84.62c-.1-8.72,23.61-5.87,40.35-14.36,18.19-9.22,25.96-29.09,24.45-49.02-1.48-19.56-16.08-37.2-35.95-35.57l-28.39,2.33-.97-36.06c-.44-16.42-13.17-28.24-29.48-29.99-37.16-3.99-76.26,19.02-76.15,48.6l.12,32.14c.01,3.64-1.61,6.49-5.34,7.3l-23.78,5.16c-24.78,8.34-38.53,32.22-35.01,58,1.54,11.24,7.5,21.12,15.28,26.32,18.38,12.27,32.66.45,48.65,3.14l-.21,98.54c-.03,14.18.8,27.07,4.89,40.43,7.63,24.93,27.52,43.29,53.73,47.32,29.97,4.6,59.81.23,86.99-13.02,25.37-12.37,37.34-42,25.91-68.49ZM797.05,1028.33c19.03-35.8,25.12-76.74,16.62-116.66-11.58-54.36-50.67-96.48-104.59-111.93-57.44-16.46-121.15-2.6-166.76,36.51-39.85,34.17-60.88,85.71-56.82,137.53,3.98,50.84,30.86,95.43,74.15,121.19,84.09,50.03,192.28,18.23,237.4-66.63ZM916.4,1132.58c9.89-8.3,12.28-21.19,11.95-33.31l-1.65-59.87,19.25,10.77c58.17,21.73,117.07-12.71,133.01-74.86,17.84-69.57-6.05-154.26-79.93-170.27-29.18-6.32-58.26.29-80.32,21.43-11.93-22.55-38.2-24.78-62.04-17.15-18.81,6.53-29.76,23.38-28.27,43.29l6.98,92.98,3.67,158.25c.51,21.8,16.52,36.49,37.17,38.05,14.01,1.06,28.6.41,40.19-9.32ZM1432.12,1055.46c9.79-6.08,15.18-18.84,15.2-30.14l.26-173.96c.02-13.34-7.23-24.16-16.24-31.43-17.85-14.4-41.08-7.57-59.13-3.76-32.57-13.46-66.9-20.42-103.79-3.81-67,30.16-84.62,116.79-56.45,179.61,26.3,58.64,98.26,85.12,150.35,47.18,10.25,25.34,48.71,29.4,69.79,16.32ZM1692.82,1096c13.09-30.78,19.11-63.03,20-96.71l3.37-128.43c.41-15.76-5.67-31.68-17.52-41.68-19.15-16.16-47.95-18.9-69.83-7.03-10.86,5.89-16.2,19.09-15.52,30.76l2.89,49.46c1.4,23.95,3.32,56.51-14.35,62.27-6.84,2.23-14.09,1.39-20.26-2.57-8.22-5.27-12.14-15-13.2-24.95l-7.88-73.87c-4.09-38.32-40.82-60.3-79.41-51-17.16,4.13-25.73,19.8-23.26,37.47,4.4,31.45,8.51,62.03,8.8,94.12.14,15.73,2.18,30.39,6.42,45.17,15.8,55.09,75.75,73.45,129.72,55.4-1.4,11.97-6.03,21.1-12.06,29.67-17.92,25.43-53.99,23.19-81.02,4.87-11.67-7.91-25.01-12.49-39.31-9.46-31.25,6.62-49.65,39.78-38.65,69.82,12.42,33.92,64.45,49.46,100.86,51.81,72.83,4.69,131.61-27.9,160.2-95.12Z"/><path fill="#12121C" d="M1692.82,1096c-28.59,67.22-87.37,99.81-160.2,95.12-36.41-2.35-88.45-17.89-100.86-51.81-11-30.04,7.4-63.2,38.65-69.82,14.29-3.03,27.64,1.55,39.31,9.46,27.03,18.32,63.1,20.57,81.02-4.87,6.04-8.57,10.66-17.7,12.06-29.67-53.97,18.06-113.92-.31-129.72-55.4-4.24-14.78-6.28-29.44-6.42-45.17-.28-32.09-4.4-62.67-8.8-94.12-2.47-17.67,6.09-33.33,23.26-37.47,38.59-9.3,75.32,12.68,79.41,51l7.88,73.87c1.06,9.95,4.98,19.68,13.2,24.95,6.17,3.96,13.42,4.8,20.26,2.57,17.67-5.76,15.75-38.32,14.35-62.27l-2.89-49.46c-.68-11.67,4.65-24.87,15.52-30.76,21.88-11.87,50.68-9.14,69.83,7.03,11.85,10,17.93,25.92,17.52,41.68l-3.37,128.43c-.88,33.68-6.9,65.93-20,96.71Z"/><path fill="#12121C" d="M916.4,1132.58c-11.6,9.73-26.18,10.37-40.19,9.32-20.65-1.56-36.67-16.25-37.17-38.05l-3.67-158.25-6.98-92.98c-1.49-19.91,9.45-36.77,28.27-43.29,23.84-7.63,50.1-5.4,62.04,17.15,22.06-21.14,51.14-27.75,80.32-21.43,73.88,16,97.77,100.69,79.93,170.27-15.94,62.15-74.83,96.59-133.01,74.86l-19.25-10.77,1.65,59.87c.33,12.11-2.06,25.01-11.95,33.31ZM986.21,961.75c18.35-16.4,18.26-45.19,2.05-62.87-12.56-13.7-32.96-15.03-48.08-4.06-19.72,14.31-22.96,42.51-8.02,61.54,13.2,16.81,36.95,20.67,54.04,5.39Z"/><path fill="#12121C" d="M482.96,1028.56c11.44,26.48-.53,56.11-25.91,68.49-27.18,13.25-57.01,17.62-86.99,13.02-26.21-4.03-46.1-22.39-53.73-47.32-4.09-13.36-4.92-26.24-4.89-40.43l.21-98.54c-15.99-2.69-30.27,9.14-48.65-3.14-7.78-5.19-13.74-15.08-15.28-26.32-3.52-25.78,10.22-49.67,35.01-58l23.78-5.16c3.73-.81,5.35-3.66,5.34-7.3l-.12-32.14c-.11-29.59,38.99-52.59,76.15-48.6,16.32,1.75,29.04,13.57,29.48,29.99l.97,36.06,28.39-2.33c19.88-1.63,34.47,16.01,35.95,35.57,1.51,19.93-6.26,39.79-24.45,49.02-16.74,8.49-40.45,5.64-40.35,14.36l1.01,84.62c.08,6.33,3.64,12.43,6.89,15.41,4.81,4.41,11.25,4.83,17.66,3.59,16.09-3.11,32.49,2.85,39.54,19.17Z"/><path fill="#12121C" d="M1432.12,1055.46c-21.08,13.09-59.54,9.02-69.79-16.32-52.1,37.94-124.05,11.46-150.35-47.18-28.17-62.81-10.56-149.45,56.45-179.61,36.89-16.61,71.22-9.65,103.79,3.81,18.04-3.81,41.28-10.64,59.13,3.76,9.01,7.27,16.26,18.09,16.24,31.43l-.26,173.96c-.02,11.3-5.41,24.06-15.2,30.14ZM1365.51,929.57c0-22.32-18.1-40.41-40.43-40.41s-40.43,18.09-40.43,40.41,18.1,40.41,40.43,40.41,40.43-18.09,40.43-40.41Z"/><path fill="#12121C" d="M1170.98,1045.81c-13.52,8.59-29.41,8.76-43.95,5.88-19.1-3.78-31.64-19.19-31.7-39.02-.21-65.54-1.12-129.71-6.53-195.02l-5.31-64.14c-1.55-18.67,6.35-37.03,21.76-47.87,20.96-14.74,49.42-14.99,70.72-.91,20.81,13.75,25.76,42.67,23.06,68.13-8.49,80.05-11.09,159.21-11.03,239.78,0,13.2-5.9,26.09-17.03,33.17Z"/><path fill="#FF6B1A" d="M986.21,961.75c-17.09,15.28-40.84,11.41-54.04-5.39-14.94-19.03-11.7-47.23,8.02-61.54,15.12-10.97,35.52-9.64,48.08,4.06,16.21,17.68,16.29,46.47-2.05,62.87Z"/><ellipse fill="#FF6B1A" cx="1325.07" cy="929.57" rx="40.43" ry="40.41"/><path fill="#12121C" d="M797.05,1028.33c-45.12,84.87-153.31,116.67-237.4,66.63-43.29-25.76-70.17-70.35-74.15-121.19-4.06-51.81,16.97-103.35,56.82-137.53,45.61-39.11,109.32-52.97,166.76-36.51,53.92,15.45,93.01,57.57,104.59,111.93,8.5,39.91,2.41,80.86-16.62,116.66ZM741.26,957.2c0-49.62-40.24-89.84-89.88-89.84s-89.88,40.22-89.88,89.84,40.24,89.84,89.88,89.84,89.88-40.22,89.88-89.84Z"/><path fill="#FF6B1A" d="M741.26,957.2c0,49.62-40.24,89.84-89.88,89.84s-89.88-40.22-89.88-89.84,40.24-89.84,89.88-89.84,89.88,40.22,89.88,89.84ZM709.37,969.13c5.73-3.7,7.07-10.66,6.34-15.98-.63-4.66-3.94-8.76-8.75-11.79l-70.66-44.51c-5.99-3.77-12.67-3.95-18.58-.59-4.97,2.82-8.41,8.44-8.39,15.73l.19,91.17c.01,6.41,4.14,11.75,8.33,14.05,5.03,2.76,12.13,3.11,17.31-.23l74.21-47.85Z"/><path fill="#FFF6E5" d="M709.37,969.13l-74.21,47.85c-5.18,3.34-12.29,2.99-17.31.23-4.19-2.3-8.31-7.64-8.33-14.05l-.19-91.17c-.02-7.29,3.42-12.91,8.39-15.73,5.91-3.36,12.59-3.18,18.58.59l70.66,44.51c4.81,3.03,8.12,7.13,8.75,11.79.72,5.32-.61,12.28-6.34,15.98Z"/></symbol>
+<symbol id="mark" viewBox="0 0 512 512"><path fill="#6E50FF" transform="translate(22 26)" d="M120 46C204 22 330 18 404 54C470 86 484 168 480 256C476 352 448 440 350 466C262 490 152 488 86 440C30 398 28 318 32 238C36 150 56 66 120 46Z"/><path fill="#FF6B1A" stroke="#12121C" stroke-width="16" stroke-linejoin="round" d="M120 46C204 22 330 18 404 54C470 86 484 168 480 256C476 352 448 440 350 466C262 490 152 488 86 440C30 398 28 318 32 238C36 150 56 66 120 46Z"/><g transform="translate(-240.54 -477.24) scale(0.7671)"><path fill="#12121C" d="M797.05,1028.33c-45.12,84.87-153.31,116.67-237.4,66.63-43.29-25.76-70.17-70.35-74.15-121.19-4.06-51.81,16.97-103.35,56.82-137.53,45.61-39.11,109.32-52.97,166.76-36.51,53.92,15.45,93.01,57.57,104.59,111.93,8.5,39.91,2.41,80.86-16.62,116.66ZM741.26,957.2c0-49.62-40.24-89.84-89.88-89.84s-89.88,40.22-89.88,89.84,40.24,89.84,89.88,89.84,89.88-40.22,89.88-89.84Z"/><path fill="#FF6B1A" d="M741.26,957.2c0,49.62-40.24,89.84-89.88,89.84s-89.88-40.22-89.88-89.84,40.24-89.84,89.88-89.84,89.88,40.22,89.88,89.84ZM709.37,969.13c5.73-3.7,7.07-10.66,6.34-15.98-.63-4.66-3.94-8.76-8.75-11.79l-70.66-44.51c-5.99-3.77-12.67-3.95-18.58-.59-4.97,2.82-8.41,8.44-8.39,15.73l.19,91.17c.01,6.41,4.14,11.75,8.33,14.05,5.03,2.76,12.13,3.11,17.31-.23l74.21-47.85Z"/><path fill="#FFF6E5" d="M709.37,969.13l-74.21,47.85c-5.18,3.34-12.29,2.99-17.31.23-4.19-2.3-8.31-7.64-8.33-14.05l-.19-91.17c-.02-7.29,3.42-12.91,8.39-15.73,5.91-3.36,12.59-3.18,18.58.59l70.66,44.51c4.81,3.03,8.12,7.13,8.75,11.79.72,5.32-.61,12.28-6.34,15.98Z"/></g></symbol>
+    <symbol id="i-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></symbol>
+    <symbol id="i-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l6 6M22 9l-6 6"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="7"/><path d="M15.5 15.5L21 21"/><path d="M8.6 8.8a2 2 0 1 1 2.6 1.9c-.6.2-.7.7-.7 1.3"/><path d="M10.5 14.2v.1"/></symbol>
+    <symbol id="i-timer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 5v14M16 5v14"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12-7.5z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.8 5.9 6.4.7-4.8 4.4 1.3 6.4L12 17.2l-5.7 3.2 1.3-6.4-4.8-4.4 6.4-.7z" fill="currentColor" stroke="#0A0A12" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></symbol>
+    <symbol id="i-zoom-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="7"/><path d="M21 21l-5.5-5.5M10.5 7.5v6M7.5 10.5h6"/></symbol>
+    <symbol id="i-zoom-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="7"/><path d="M21 21l-5.5-5.5M7.5 10.5h6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7M6 9.5V20h12V9.5"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+    <symbol id="i-shrink" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></symbol>
+    <symbol id="i-levels" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="11" rx="2"/><path d="M8 4h5l-2-2M13 4l-2 2"/></symbol>
+  </defs>
+</svg>
+
+</body>
+</html>
