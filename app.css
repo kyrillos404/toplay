@@ -1,3 +1,8 @@
+/* Fonts live inside the site: faster, private, and not blocked when Google is unreachable. */
+@font-face { font-family: "Bricolage Grotesque"; src: url("assets/fonts/bricolage-grotesque.woff2") format("woff2"); font-weight: 200 800; font-stretch: 75% 100%; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("assets/fonts/dm-sans.woff2") format("woff2"); font-weight: 100 1000; font-display: swap; }
+@font-face { font-family: "Silkscreen"; src: url("assets/fonts/silkscreen-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Silkscreen"; src: url("assets/fonts/silkscreen-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
 /* Toplay — Arcade Night. One deliberate dark look across site and game. */
 :root {
   --bg: #12121C; --surface: #1C1C2B; --surface-raised: #26263A; --line: #3A3A55; --edge: #0A0A12;
@@ -684,3 +689,7 @@ body.no-scroll { overflow: hidden; }
   .game-body > * { min-width: 0; }
   .words, .words ul { max-width: 100%; }
 }
+/* on the lime pop-ups the article colours need darker shades (das was lime on lime) */
+.float-word .art-der { color: #1d4f8f; }
+.float-word .art-die { color: #b3133f; }
+.float-word .art-das { color: #2e6200; }
