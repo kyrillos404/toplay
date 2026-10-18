@@ -182,6 +182,7 @@ TP.i18n = (() => {
     'Zoom in (+)': 'Vergrößern (+)', 'Zoom out (−)': 'Verkleinern (−)',
     'Help: show one hidden object (H)': 'Hilfe: ein verstecktes Ding zeigen (H)',
     'Show all words': 'Alle Wörter zeigen', 'Show fewer words': 'Weniger Wörter zeigen',
+    'All words': 'Alle Wörter', 'Close': 'Schließen',
     // game messages
     'Opening the room…': 'Das Zimmer wird geöffnet…',
     'Hiding 20 things in the mess.': '20 Dinge werden im Chaos versteckt.',
@@ -1322,7 +1323,7 @@ TP.game = (() => {
     Object.assign(S, { found: new Set(), misses: 0, sinceP: 0, helps: 0, timeLeft: lvl.timeLimit, cooldown: 0, running: false, ended: false, warned60: false, lastTickSec: null, hintTimer: null, pendingMiss: null, lastTap: 0 });
     el.gMarks.innerHTML = ''; el.gToasts.innerHTML = ''; el.gOverlay.innerHTML = '';
     el.gScene.classList.remove('dim');
-    el.gWords.classList.remove('open'); el.gGrab.setAttribute('aria-expanded', 'false');
+    el.gWords.classList.remove('open'); el.gGrab.setAttribute('aria-expanded', 'false'); el.gGrab.querySelector('span').textContent = 'All words';
     S.revealed = false;
     renderWords();
     el.gCtlHint.style.opacity = 1;
@@ -1330,15 +1331,20 @@ TP.game = (() => {
   }
 
   /** the word list in the current language (German sorted by noun, article in colour); keeps found/missed state */
+  const stripMQ = matchMedia('(max-width: 860px), (max-height: 520px) and (max-width: 1000px)');
+  const stripMode = () => stripMQ.matches && !el.gWords.classList.contains('open');
   function renderWords() {
     const L = TP.i18n.lang;
-    const words = lvl.objects.slice().sort((a, b) => TP.i18n.wordKey(a).localeCompare(TP.i18n.wordKey(b), L));
+    const fnd = o => (S.found && S.found.has(o.id) ? 1 : 0);
+    // in the bottom bar, words still to find come first and found ones move to the end
+    const words = lvl.objects.slice().sort((a, b) => (stripMQ.matches ? fnd(a) - fnd(b) : 0) || TP.i18n.wordKey(a).localeCompare(TP.i18n.wordKey(b), L));
     el.gWordList.innerHTML = words.map(o => {
       const f = S.found && S.found.has(o.id), m = !f && S.revealed;
       const listen = (L === 'de' ? 'Anhören: ' : 'Listen: ') + TP.speech.text(o, L);
       return `<li class="word${f ? ' found' : ''}${m ? ' missed' : ''}" data-id="${o.id}" translate="no" role="button" tabindex="0" aria-label="${TP.esc(listen)}">${TP.icon('check')}<span>${TP.i18n.wordHTML(o)}</span>${TP.icon('sound-on', 'icon say-ic')}</li>`;
     }).join('');
     TP.$$('.word', el.gWordList).forEach(li => { li.querySelector('.icon').style.display = li.classList.contains('found') ? '' : 'none'; });
+    requestAnimationFrame(updateFades);
   }
   // a word in the list says itself when tapped
   function sayFromList(e) {
@@ -1455,7 +1461,11 @@ TP.game = (() => {
     el.gHelp.onclick = help;
     el.gPause.onclick = () => S.ended ? null : pause();
     el.gFull.onclick = fullscreen;
-    el.gGrab.onclick = () => { const o = el.gWords.classList.toggle('open'); el.gGrab.setAttribute('aria-expanded', String(o)); el.gGrab.setAttribute('aria-label', o ? 'Show fewer words' : 'Show all words'); };
+    el.gGrab.onclick = () => setAllWords(!el.gWords.classList.contains('open'));
+    // the bar scrolls sideways: finger swipe natively, mouse wheel turned sideways, fades show there is more
+    el.gWordList.addEventListener('wheel', e => { if (!stripMode() || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; e.preventDefault(); el.gWordList.scrollLeft += e.deltaY; }, { passive: false });
+    el.gWordList.addEventListener('scroll', updateFades, { passive: true });
+    stripMQ.addEventListener('change', () => { setAllWords(false); if (lvl) renderWords(); });
     new ResizeObserver(() => { if (open_) layout(false); }).observe(el.gStage);
     document.addEventListener('fullscreenchange', () => { el.gFull.innerHTML = TP.icon(document.fullscreenElement ? 'shrink' : 'expand'); el.gFull.setAttribute('aria-label', document.fullscreenElement ? 'Exit full screen (F)' : 'Full screen (F)'); });
     document.addEventListener('visibilitychange', () => { if (document.hidden && open_ && S.running) pause(); });
@@ -1540,6 +1550,20 @@ TP.game = (() => {
     S.pendingMiss = { t: setTimeout(() => { S.pendingMiss = null; if (S.running) miss(ix, iy); }, 280) };
   }
 
+  /** phones: open or close the full word panel over the room (the clock keeps running) */
+  function setAllWords(open) {
+    el.gWords.classList.toggle('open', open);
+    el.gGrab.setAttribute('aria-expanded', String(open));
+    el.gGrab.querySelector('span').textContent = open ? 'Close' : 'All words';
+    el.gWordList.scrollLeft = 0; el.gWordList.scrollTop = 0;
+    if (lvl) renderWords();
+    updateFades();
+  }
+  function updateFades() {
+    const u = el.gWordList, max = u.scrollWidth - u.clientWidth;
+    el.gWords.classList.toggle('fade-l', stripMode() && u.scrollLeft > 4);
+    el.gWords.classList.toggle('fade-r', stripMode() && u.scrollLeft < max - 4);
+  }
   /** the first find on this device: show that words can be heard again */
   function sayTip(o) {
     const st = TP.store.load(); if (st.seenSayTip) return;
@@ -1579,7 +1603,11 @@ TP.game = (() => {
     const fw = mark('float-word', hu, hv, TP.i18n.wordHTML(o), 1400); fw.classList.remove('mark'); fw.setAttribute('translate', 'no');
     if (S.hintFor === o.id) clearHint();
     const li = el.gWordList.querySelector(`[data-id="${o.id}"]`);
-    if (li) { li.classList.add('found', 'pop'); li.querySelector('.icon').style.display = ''; setTimeout(() => li.classList.remove('pop'), 650); }
+    if (li) {
+      li.classList.add('found', 'pop'); li.querySelector('.icon').style.display = ''; setTimeout(() => li.classList.remove('pop'), 650);
+      // bottom bar: after the pop, the found word slides to the end and the bar returns to the start
+      if (stripMQ.matches) setTimeout(() => { if (!li.isConnected) return; el.gWordList.appendChild(li); if (stripMode()) el.gWordList.scrollTo({ left: 0, behavior: TP.reduced ? 'auto' : 'smooth' }); updateFades(); }, 700);
+    }
     TP.audio.sfx('found'); TP.buzz(15);
     // say it inside the tap itself: phones only allow speech that starts from a tap
     if (TP.speech.say(o) === 'novoice') noVoice(); else sayTip(o);
@@ -1708,7 +1736,7 @@ TP.game = (() => {
     el.game.appendChild(root);
     const hole = root.firstChild, card = root.lastChild;
     let i = 0;
-    if (innerWidth <= 860) { el.gWords.classList.remove('open'); el.gGrab.setAttribute('aria-expanded', 'false'); }
+    if (stripMQ.matches) setAllWords(false);
     function place() {
       const st = TOUR[i], t = st.el && st.el();
       const vw = innerWidth, vh = innerHeight;

@@ -635,3 +635,52 @@ body.no-scroll { overflow: hidden; }
 /* three switches in the pause screen: tighter so "Effekte" fits; one column on narrow phones */
 .toggle-row .toggle { padding: 0 var(--space-3); font-size: 15px; }
 @media (max-width: 420px) { .toggle-row { grid-template-columns: 1fr; } }
+
+/* ---------- phones: the word list is a bar under the room ---------- */
+@media (max-width: 860px), (max-height: 520px) and (max-width: 1000px) {
+  /* the bar takes its own row, so the room ends above it and nothing hides behind it */
+  .words { margin-top: 0; max-height: none; border-radius: 0; border-top: 2px solid var(--edge); display: flex; flex-direction: column; position: relative;
+    padding-bottom: env(safe-area-inset-bottom, 0px); transition: none; }
+  .words-head { flex-wrap: nowrap; align-items: center; gap: var(--space-3); padding: 8px var(--space-4) 6px; row-gap: 0; }
+  .words-head .label { font-size: 11px; }
+  .words-head b { font-size: 13px; margin-right: auto; }
+  .words-say { display: none; }
+  .grab { display: inline-flex; align-items: center; gap: 6px; width: auto; height: 30px; padding: 0 12px; margin: 0; border-radius: var(--radius-pill);
+    background: var(--surface-raised); border: 1px solid var(--line); color: var(--ink); font-family: var(--font-pixel); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+  .grab::before { display: none; }
+  .grab .icon { width: 14px; height: 14px; color: var(--zest); }
+  .grab[aria-expanded="true"] { background: var(--zest); color: var(--on-zest); border-color: var(--zest); }
+  .grab[aria-expanded="true"] .icon { color: var(--on-zest); }
+  /* one row that swipes sideways and settles on a word */
+  .words ul { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 2px var(--space-4) 10px; scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--space-4); overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x; }
+  .words ul::-webkit-scrollbar { display: none; }
+  .words .word { flex: none; scroll-snap-align: start; white-space: nowrap; min-height: 40px; padding: 6px 10px; font-size: 15px; }
+  .words .word span { overflow-wrap: normal; hyphens: none; }
+  .words .word.found { opacity: .75; }
+  /* soft fades show that the row continues */
+  .words::before, .words::after { content: ""; position: absolute; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); height: 44px; width: 36px; pointer-events: none; z-index: 2; opacity: 0; transition: opacity 200ms; }
+  .words::before { left: 0; background: linear-gradient(90deg, var(--surface), transparent); }
+  .words::after { right: 0; background: linear-gradient(-90deg, var(--surface), transparent); }
+  .words.fade-l::before, .words.fade-r::after { opacity: 1; }
+  /* "All words": a panel over the room with every word; the clock keeps running */
+  .words.open { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; max-height: 72%; border-radius: var(--radius-lg) var(--radius-lg) 0 0; box-shadow: 0 -12px 32px rgba(0,0,0,.45); }
+  .words.open ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); overflow-x: hidden; overflow-y: auto; scroll-snap-type: none; touch-action: pan-y; padding-bottom: var(--space-4); }
+  .words.open .word { white-space: normal; }
+  .words.open::before, .words.open::after { display: none; }
+  .stage-tools, .help-wrap { bottom: var(--space-4); }
+  .game-body { position: relative; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .words { max-height: none; }
+  .words-head { padding-top: 4px; padding-bottom: 2px; }
+  .words .word { min-height: 34px; padding: 4px 9px; font-size: 14px; }
+  .words ul { padding-bottom: 6px; }
+  .words.open { max-height: 80%; }
+}
+@media (max-width: 860px), (max-height: 520px) and (max-width: 1000px) {
+  /* the long row must scroll inside the bar, never widen the screen */
+  .game-body { grid-template-columns: minmax(0, 1fr); }
+  .game-body > * { min-width: 0; }
+  .words, .words ul { max-width: 100%; }
+}
